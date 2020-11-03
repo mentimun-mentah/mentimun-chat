@@ -1,20 +1,38 @@
+from datetime import datetime
+from typing import List, Optional
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
-from typing import List
 
 app = FastAPI()
 
 class ConnectionManager:
     users: List[WebSocket] = []
+    users_data: List[dict] = []
 
     async def connect(self,websocket: WebSocket):
         await websocket.accept()
         self.users.append(websocket)
 
-    async def broadcast(self,message: dict):
-        for user in self.users:
-            await user.send_json(message)
+    async def broadcast(
+        self,
+        msg_data: dict,
+        message: Optional[str] = None,
+        operation: Optional[str] = None
+    ) -> None:
+        if operation == 'conn':
+            self.users_data.append(msg_data)
 
-    def disconnect(self,websocket: WebSocket):
+        if operation == 'discon':
+            for index, value in enumerate(self.users_data):
+                if value['username'] == msg_data['username']:
+                    self.users_data.pop(index)
+
+        if message: msg_data.update({"message": message})
+
+        for user in self.users:
+            await user.send_json(msg_data)
+            await user.send_json({"users": self.users_data})
+
+    def disconnect(self,websocket: WebSocket) -> None:
         self.users.remove(websocket)
 
 @app.websocket('/ws')
@@ -23,10 +41,15 @@ async def websocket(websocket: WebSocket, username: str = Query(...)):
     await connection.connect(websocket)
     try:
         avatar = await websocket.receive_text()
-        await connection.broadcast({"username": username,"message":f"{username} connected","avatar": avatar})
+        msg_data = {
+            "username": username,
+            "avatar": avatar,
+            "received": str(datetime.now())
+        }
+        await connection.broadcast(msg_data,operation="conn")
         while True:
             data = await websocket.receive_text()
-            await connection.broadcast({"username": username,"message":f"{data}","avatar": avatar})
+            await connection.broadcast(msg_data,message=f"{data}")
     except WebSocketDisconnect:
         connection.disconnect(websocket)
-        await connection.broadcast({"username": username,"message":f"{username} disconnected","avatar": avatar})
+        await connection.broadcast(msg_data,operation="discon")
