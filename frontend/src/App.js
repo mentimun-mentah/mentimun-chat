@@ -20,7 +20,7 @@ const App = () => {
     if (username) {
       setVisible(false);
       const data = new W3CWebSocket(
-        `ws://192.168.18.202:5000/ws?username=${username}`
+        `ws://45.80.181.154:5000/ws?username=${username}`
       );
       setClient(data);
 
