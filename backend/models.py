@@ -29,7 +29,8 @@ metadata.bind = engine
 metadata.create_all(engine)
 
 async def insert_message(**kwargs) -> int:
-    await database.execute(query=users.insert(),values=kwargs)
+    if kwargs.get("id"): kwargs.pop("id",None)
+    return await database.execute(query=users.insert(),values=kwargs)
 
 async def get_history() -> users:
-    return await database.fetch_all(query=select([users]))
+    return await database.fetch_all(query=select([users]).order_by(users.c.id.desc()))
