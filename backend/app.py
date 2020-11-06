@@ -45,7 +45,10 @@ class ConnectionManager:
                 if value['username'] == msg_data['username']:
                     self.users_data.pop(index)
 
-        if message: msg_data.update({"message": message})
+        if message:
+            msg_data.update({"message": message})
+            user_id = await insert_message(**msg_data)
+            msg_data.update({"id": user_id})
 
         for user in self.users:
             await user.send_json(msg_data)
@@ -69,7 +72,6 @@ async def websocket(websocket: WebSocket, username: str = Query(...,min_length=1
         while True:
             data = await websocket.receive_text()
             await connection.broadcast(msg_data,message=f"{data}")
-            await insert_message(**msg_data)
     except (WebSocketDisconnect, WebSocketRequestValidationError):
         connection.disconnect(websocket)
         await connection.broadcast(msg_data,operation="discon")
