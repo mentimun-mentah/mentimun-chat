@@ -20,7 +20,7 @@ const App = () => {
     if (username) {
       setVisible(false);
       const data = new W3CWebSocket(
-        `ws://192.168.18.202:5000/ws?username=${username}`
+        `ws://45.80.181.154:5000/ws?username=${username}`
       );
       setClient(data);
 
@@ -32,13 +32,13 @@ const App = () => {
         const data = JSON.parse(message.data);
         if(data.message){
           setMessage((oldMessage) => [
-            ...oldMessage,
             {
               message: data.message,
               username: data.username,
               avatar: data.avatar,
               received: data.received,
             },
+            ...oldMessage,
           ]);
         } 
         if(data.users){
@@ -127,15 +127,13 @@ const App = () => {
                       itemLayout="horizontal"
                       dataSource={message}
                       renderItem={(item, i) => (
-                        <motion.div style={{ x: -100 }} animate={{ x: 0 }} key={i} >
-                          <List.Item>
-                            <List.Item.Meta
-                              avatar={<Avatar size={45} src={item.avatar} />}
-                              title={<>{item.username} <small>{moment(item.received).fromNow()}</small></>}
-                              description={item.message}
-                            />
-                          </List.Item>
-                        </motion.div>
+                        <List.Item key={i}>
+                          <List.Item.Meta
+                            avatar={<Avatar size={45} src={item.avatar} />}
+                            title={<>{item.username} <small>{moment(item.received).fromNow()}</small></>}
+                            description={item.message}
+                          />
+                        </List.Item>
                       )}
                     />
                   </div>
