@@ -1,8 +1,27 @@
 from datetime import datetime
 from typing import List, Optional
+from models import database, insert_message, get_history, Users
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+from fastapi.exceptions import WebSocketRequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
 
 class ConnectionManager:
     users: List[WebSocket] = []
@@ -36,7 +55,7 @@ class ConnectionManager:
         self.users.remove(websocket)
 
 @app.websocket('/ws')
-async def websocket(websocket: WebSocket, username: str = Query(...)):
+async def websocket(websocket: WebSocket, username: str = Query(...,min_length=1,max_length=100)):
     connection = ConnectionManager()
     await connection.connect(websocket)
     try:
@@ -50,6 +69,11 @@ async def websocket(websocket: WebSocket, username: str = Query(...)):
         while True:
             data = await websocket.receive_text()
             await connection.broadcast(msg_data,message=f"{data}")
-    except WebSocketDisconnect:
+            await insert_message(**msg_data)
+    except (WebSocketDisconnect, WebSocketRequestValidationError):
         connection.disconnect(websocket)
         await connection.broadcast(msg_data,operation="discon")
+
+@app.get("/history",response_model=List[Users])
+async def history():
+    return await get_history()
