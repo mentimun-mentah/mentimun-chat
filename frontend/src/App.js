@@ -9,7 +9,7 @@ import isLength from 'validator/lib/isLength'
 
 import "./App.css";
 
-const IP = '45.80.181.154:8000'
+const IP = '45.80.181.154:5000'
 
 const formUser = { user: { value: "", isValid: true, message: null } }
 
@@ -53,7 +53,7 @@ const App = () => {
         setMessage(data)
       })
       .catch(() => { })
-  }, [])
+  }, [activeUser.length])
 
   const onSubmitModal = () => {
     if (validateUsername(username, setUsername)) {
